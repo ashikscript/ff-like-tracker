@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Fire Like Status</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e5e8ee;--ac:#16a34a;--acl:#dcfce7;--dk:#0f172a;--bad:#dc2626}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--tx)}
+.bar0{background:var(--dk);color:#fff;padding:16px 18px;font-weight:700;font-size:17px;letter-spacing:.2px}
+.bar0 small{display:block;font-weight:400;color:#94a3b8;font-size:12px;margin-top:2px}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.title{font-weight:700;font-size:14px;margin-bottom:2px}
+input,button{font:inherit;padding:12px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;color:var(--tx);width:100%;margin-top:8px;outline:none}
+input:focus{border-color:var(--dk)}
+button{background:var(--dk);color:#fff;border:0;font-weight:600;cursor:pointer}
+button:active{opacity:.85}
+button.s{background:#fff;color:var(--mu);border:1px solid var(--bd);width:auto;padding:6px 12px;font-size:13px;margin:0}
+button.s.red{color:var(--bad)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.top2{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.uid{font-size:20px;font-weight:800}
+.mu{color:var(--mu);font-size:13px}
+.mid{display:flex;align-items:center;gap:18px;margin:16px 0 6px}
+.ring{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;flex:0 0 104px}
+.ring div{width:80px;height:80px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}
+.kv{flex:1}
+.kv p{display:flex;justify-content:space-between;margin:0;padding:8px 0;border-bottom:1px dashed var(--bd);font-size:14px}
+.kv p:last-child{border:0}.kv p span{color:var(--mu)}.kv p b{font-size:16px}
+.badge{display:inline-block;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;margin-top:8px}
+.badge.ok{background:var(--acl);color:#166534}
+.badge.late{background:#fee2e2;color:#991b1b}
+.badge.go{background:#fef3c7;color:#92400e}
+.hist{margin-top:12px;border-top:1px solid var(--bd)}
+.ent{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.ent b{color:var(--ac)}
+.ent a{color:var(--bad);text-decoration:none;margin-left:10px}
+.empty{text-align:center;color:var(--mu);padding:26px 0;font-size:14px}
+.foot{text-align:center;font-size:12px}.foot a{color:var(--mu)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="bar0">Free Fire Like Status<small>Check your likes progress with your UID</small></div>
+<div class="wrap">
+
+<div class="card" id="login" hidden>
+  <div class="title">Admin Login</div>
+  <input id="pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">Login</button>
+</div>
+
+<div class="card" id="adminForm" hidden>
+  <div class="h"><div class="title">New Order</div><button class="s" onclick="doLogout()">Logout</button></div>
+  <input id="uid" placeholder="Free Fire UID" inputmode="numeric">
+  <div class="row">
+    <input id="days" type="number" placeholder="Total days (e.g. 10)" inputmode="numeric">
+    <input id="target" type="number" placeholder="Total likes (e.g. 3000)" inputmode="numeric">
+  </div>
+  <button onclick="addOrder()">Start Order</button>
+</div>
+
+<div class="card">
+  <div class="title">Check Like Status</div>
+  <div class="row">
+    <input id="q" placeholder="Enter UID" inputmode="numeric" onkeydown="if(event.key==='Enter')doSearch()">
+    <button style="flex:0 0 100px" onclick="doSearch()">Search</button>
+  </div>
+</div>
+
+<div id="list"></div>
+<div class="mu" id="msg" style="text-align:center"></div>
+<p class="foot"><a href="#admin" onclick="setTimeout(route,0)">Admin</a></p>
+
+</div>
+<script>
+// ====== Paste your Firebase config here. If left as is, the app runs in demo mode (admin password: 1234) ======
+const firebaseConfig = {
+  apiKey: "AIzaSyCBfGnkhCPzFlRRebpirZ0yxEz1NlOpUUw",
+  authDomain: "ff-like-tracker.firebaseapp.com",
+  projectId: "ff-like-tracker",
+  storageBucket: "ff-like-tracker.firebasestorage.app",
+  messagingSenderId: "237717028653",
+  appId: "1:237717028653:web:98e04b83121773b6539da4"
+};
+// The admin email you created in Firebase Authentication (only the password is typed on the login page)
+const ADMIN_EMAIL = "you@example.com";
+
+const $ = id => document.getElementById(id);
+const useFB = firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined';
+let col, L=[], admin=false, Q='', unsub=null, ALL=[];
+
+function lsLoad(){try{L=JSON.parse(localStorage.getItem('ffo')||'[]')}catch(e){L=[]}}
+function lsSave(){try{localStorage.setItem('ffo',JSON.stringify(L))}catch(e){}render(L)}
+
+function route(){
+  $('login').hidden = !(location.hash==='#admin' && !admin);
+  $('adminForm').hidden = !admin;
+}
+function doLogin(){
+  const p=$('pw').value;
+  if(useFB){
+    firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL,p).then(()=>{$('pw').value=''})
+      .catch(()=>alert('Wrong password'));
+  }else{
+    if(p==='1234'){admin=true;$('pw').value='';afterAuth()} else alert('Wrong password (demo password: 1234)');
+  }
+}
+function doLogout(){ if(useFB) firebase.auth().signOut(); else {admin=false;afterAuth();} location.hash=''; route(); }
+function afterAuth(){ route(); subscribe(); }
+
+if(useFB){
+  firebase.initializeApp(firebaseConfig);
+  col=firebase.firestore().collection('orders');
+  firebase.auth().onAuthStateChanged(u=>{admin=!!u;afterAuth()});
+}else{
+  $('msg').textContent='Demo mode: data is saved only in this browser. Admin password: 1234.';
+  lsLoad();
+}
+window.addEventListener('hashchange',route);
+route();subscribe();
+
+function doSearch(){ Q=$('q').value.trim(); subscribe(); }
+
+function subscribe(){
+  if(unsub){unsub();unsub=null}
+  if(!useFB){ render(L); return; }
+  const err=e=>$('msg').textContent='Error: '+e.message;
+  const ok=s=>render(s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt));
+  if(admin) unsub=col.onSnapshot(ok,err);
+  else if(Q) unsub=col.where('uid','==',Q).onSnapshot(ok,err);
+  else render([]);
+}
+
+function addOrder(){
+  const uid=$('uid').value.trim();
+  if(!uid) return alert('Enter a UID');
+  const days=parseInt($('days').value), target=parseInt($('target').value);
+  if(!days||!target) return alert('Enter total days and total likes');
+  const o={uid,days,target,entries:[],createdAt:Date.now()};
+  if(useFB) col.add(o).catch(e=>alert(e.message)); else {o.id='o'+Date.now();L.unshift(o);lsSave();}
+  $('uid').value='';$('days').value='';$('target').value='';
+}
+function addLike(id){
+  const el=$('in'+id), v=parseInt(el.value);
+  if(!v||v<=0) return alert('Enter the number of likes');
+  const e={likes:v,date:new Date().toLocaleDateString('en-GB'),t:Date.now()};
+  if(useFB) col.doc(id).update({entries:firebase.firestore.FieldValue.arrayUnion(e)}).catch(x=>alert(x.message));
+  else {L.find(x=>x.id===id).entries.push(e);lsSave();}
+}
+function delEntry(id,t){
+  const o=ALL.find(x=>x.id===id), n=o.entries.filter(e=>e.t!==t);
+  if(useFB) col.doc(id).update({entries:n}); else {o.entries=n;lsSave();}
+}
+function delOrder(id){
+  if(!confirm('Delete this order?')) return;
+  if(useFB) col.doc(id).delete(); else {L=L.filter(x=>x.id!==id);lsSave();}
+}
+
+function render(all){
+  ALL=all;
+  let orders=all;
+  if(!useFB) orders = admin ? all.filter(o=>o.uid.includes(Q)) : (Q ? all.filter(o=>o.uid===Q) : []);
+  else if(admin && Q) orders=all.filter(o=>o.uid.includes(Q));
+  if(!admin && !Q){ $('list').innerHTML='<div class="empty">Enter a UID and press Search.</div>'; return; }
+  if(!orders.length){ $('list').innerHTML='<div class="empty">No order found for this UID.</div>'; return; }
+  $('list').innerHTML=orders.map(o=>{
+    const total=o.entries.reduce((a,e)=>a+e.likes,0);
+    const dDone=o.entries.length, dLeft=Math.max(0,o.days-dDone);
+    const pct=Math.min(100,Math.round(total/o.target*100));
+    const fin=total>=o.target, over=dLeft===0&&!fin, left=Math.max(0,o.target-total);
+    const col2=fin?'#16a34a':(over?'#dc2626':'#f59e0b');
+    return `<div class="card">
+      <div class="top2"><div><div class="uid">UID ${o.uid}</div><div class="mu">${o.days} days &middot; ${o.target} likes package</div></div>
+      ${admin?`<button class="s red" onclick="delOrder('${o.id}')">Delete</button>`:''}</div>
+      <div class="mid">
+        <div class="ring" style="background:conic-gradient(${col2} ${pct*3.6}deg,#e5e8ee 0deg)"><div>${pct}%</div></div>
+        <div class="kv">
+          <p><span>Likes sent</span><b>${total}</b></p>
+          <p><span>Likes left</span><b>${Math.max(0,o.target-total)}</b></p>
+          <p><span>Days left</span><b>${dLeft}</b></p>
+        </div>
+      </div>
+      <span class="badge ${fin?'ok':(over?'late':'go')}">${fin?'Completed':(over?'Days finished - '+left+' likes still pending':'In progress - day '+dDone+' of '+o.days)}</span>
+      ${admin?`<div class="row"><input id="in${o.id}" type="number" placeholder="Today's likes (800-1200)" inputmode="numeric">
+      <button style="flex:0 0 90px" onclick="addLike('${o.id}')">+ Add</button></div>`:''}
+      ${o.entries.length?`<div class="hist">${o.entries.map(e=>`<div class="ent"><span class="mu">${e.date}</span><span><b>+${e.likes}</b>
+        ${admin?`<a href="#" onclick="delEntry('${o.id}',${e.t});return false">&#10005;</a>`:''}</span></div>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
