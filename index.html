@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Fire Like Status</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="bar0">Free Fire Like Status<small>Check your likes progress with your UID</small></div>
+<div class="wrap">
+
+<div class="card" id="login" hidden>
+  <div class="title">Admin Login</div>
+  <input id="pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">Login</button>
+</div>
+
+<div class="card" id="adminForm" hidden>
+  <div class="h"><div class="title">New Order</div><button class="s" onclick="doLogout()">Logout</button></div>
+  <input id="uid" placeholder="Free Fire UID" inputmode="numeric">
+  <div class="row">
+    <input id="days" type="number" placeholder="Total days (e.g. 10)" inputmode="numeric">
+    <input id="target" type="number" placeholder="Total likes (e.g. 3000)" inputmode="numeric">
+  </div>
+  <button onclick="addOrder()">Start Order</button>
+</div>
+
+<div class="card">
+  <div class="title">Check Like Status</div>
+  <div class="row">
+    <input id="q" placeholder="Enter UID" inputmode="numeric" onkeydown="if(event.key==='Enter')doSearch()">
+    <button style="flex:0 0 100px" onclick="doSearch()">Search</button>
+  </div>
+</div>
+
+<div id="list"></div>
+<div class="mu" id="msg" style="text-align:center"></div>
+<p class="foot"><a href="#admin" onclick="setTimeout(route,0)">Admin</a></p>
+
+</div>
+<script src="app.js"></script>
+
+</body>
+</html>
